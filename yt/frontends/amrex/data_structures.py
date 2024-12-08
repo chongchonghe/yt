@@ -1345,7 +1345,7 @@ class QuokkaHierarchy(BoxlibHierarchy):
             is_checkpoint = True
 
             self._read_particles(
-                "What", # RJ: Quokka uses What? for particles, just a placeholder here
+                "Rad_particles", # RJ: Quokka uses Rad_particles? for particles, just a placeholder here
                 is_checkpoint,
                 quokka_extra_real_fields[0 : self.ds.dimensionality],
             )
@@ -1387,7 +1387,7 @@ class QuokkaDataset(AMReXDataset):
         # Parse the metadata from metadata.yaml after initialization
         self._parse_metadata_file()
 
-        # Add raditaion fields in fluid_types only if detected
+        # Add radiation fields in fluid_types only if detected
         if self.parameters['radiation_field_groups'] > 0: 
             self.fluid_types += ("rad",)
 
@@ -1549,7 +1549,8 @@ class QuokkaDataset(AMReXDataset):
         self.parameters["HydroMethod"] = "Quokka"
 
         # Debug output for verification
-        print("Parsed header parameters:", self.parameters)
+        print("Header loaded successfully")
+        mylog.debug("Parsed header parameters: %s", self.parameters)
 
     def _parse_metadata_file(self):
         # Construct the full path to the metadata file
@@ -1561,7 +1562,7 @@ class QuokkaDataset(AMReXDataset):
                 # Update dataset parameters with metadata if it exists
                 if metadata:
                     self.parameters.update(metadata)
-                    print("Metadata loaded successfully:", metadata)
+                    print("Metadata loaded successfully")
                 else:
                     print("Warning: Metadata file is empty.")
         except FileNotFoundError:

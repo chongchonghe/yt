@@ -516,6 +516,22 @@ class QuokkaFieldInfo(FieldInfoContainer):
         ("scalar_2", ("", ["scalar_2"], "Scalar 2")),
     )
 
+    known_particle_fields: KnownFieldsT = (
+        ("particle_mass", ("code_mass", [], None)),
+        ("particle_position_x", ("code_length", [], None)),
+        ("particle_position_y", ("code_length", [], None)),
+        ("particle_position_z", ("code_length", [], None)),
+        ("particle_momentum_x", ("code_mass*code_length/code_time", [], None)),
+        ("particle_momentum_y", ("code_mass*code_length/code_time", [], None)),
+        ("particle_momentum_z", ("code_mass*code_length/code_time", [], None)),
+        # Note that these are *internal* agmomen
+        ("particle_angmomen_x", ("code_length**2/code_time", [], None)),
+        ("particle_angmomen_y", ("code_length**2/code_time", [], None)),
+        ("particle_angmomen_z", ("code_length**2/code_time", [], None)),
+        ("particle_id", ("", ["particle_index"], None)),
+        ("particle_mdot", ("code_mass/code_time", [], None)),
+    )
+
     def setup_fluid_fields(self):
         # Define momentum-to-velocity conversion
         def _get_cell_velocity(axis):
@@ -591,7 +607,7 @@ class QuokkaFieldInfo(FieldInfoContainer):
                     self.add_field(
                         ("rad", f"flux_density_{axis}_{group}"),
                         sampling_type="cell",
-                        function=lambda field, data: c * data["boxlib", flux_field] * self.ds.unit_system["energy"] / self.ds.unit_system["length"]**3,
+                        function=lambda field, data, flux_field=flux_field: data["boxlib", flux_field] * self.ds.unit_system["energy"] / self.ds.unit_system["length"]**2 / self.ds.unit_system["time"],
                         units=self.ds.unit_system["energy"] / self.ds.unit_system["length"]**2 / self.ds.unit_system["time"],
                         display_name=f"Radiation Flux Density {axis.upper()} Group {group}",
                     )
