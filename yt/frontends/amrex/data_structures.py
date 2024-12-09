@@ -1333,9 +1333,17 @@ class QuokkaHierarchy(BoxlibHierarchy):
     def __init__(self, ds, dataset_type="quokka_native"):
         super().__init__(ds, dataset_type)
 
-        if "particles" in self.ds.parameters:
-            # extra beyond the base real fields that all Boxlib
-            # particles have, i.e. the xyz positions
+        possible_particle_types = ["Rad_particles", "CIC_particles", "tracer_particles"]
+        found_particle_type = None
+
+        # Iterate through possible particle types and check if they exist
+        for particle_type in possible_particle_types:
+            if particle_type in self.ds.parameters.get("particles", []):
+                found_particle_type = particle_type
+                break
+
+        if found_particle_type:
+            # Extra fields beyond base real fields (e.g., xyz positions)
             quokka_extra_real_fields = [
                 "particle_velocity_x",
                 "particle_velocity_y",
@@ -1345,9 +1353,14 @@ class QuokkaHierarchy(BoxlibHierarchy):
             is_checkpoint = True
 
             self._read_particles(
-                "Rad_particles", # RJ: Quokka uses Rad_particles? for particles, just a placeholder here
+                found_particle_type,  # Use the detected particle type
                 is_checkpoint,
                 quokka_extra_real_fields[0 : self.ds.dimensionality],
+            )
+        else:
+            mylog.warning(
+                "No recognized particle types found in the dataset. Checked for: %s",
+                ", ".join(possible_particle_types),
             )
 
 
@@ -1476,7 +1489,7 @@ class QuokkaDataset(AMReXDataset):
             self.parameters['scalar_field_count'] = scalar_count
             self.parameters['temperature_field'] = temperature_present
             self.parameters['velocity_fields'] = velocity_present
-            self.parameters['bfield_fields'] = bfield_present
+            self.parameters['Bfields'] = bfield_present
 
             # Parse remaining metadata
             self.parameters['dimensionality'] = int(f.readline().strip())  # Dimensionality
@@ -1549,7 +1562,7 @@ class QuokkaDataset(AMReXDataset):
         self.parameters["HydroMethod"] = "Quokka"
 
         # Debug output for verification
-        print("Header loaded successfully")
+        mylog.debug("Header loaded successfully")
         mylog.debug("Parsed header parameters: %s", self.parameters)
 
     def _parse_metadata_file(self):
@@ -1562,13 +1575,13 @@ class QuokkaDataset(AMReXDataset):
                 # Update dataset parameters with metadata if it exists
                 if metadata:
                     self.parameters.update(metadata)
-                    print("Metadata loaded successfully")
+                    mylog.debug("Metadata loaded successfully")
                 else:
-                    print("Warning: Metadata file is empty.")
+                    mylog.debug("Warning: Metadata file is empty.")
         except FileNotFoundError:
-            print(f"Error: Metadata file '{metadata_filename}' not found.")
+            mylog.debug(f"Error: Metadata file '{metadata_filename}' not found.")
         except yaml.YAMLError as e:
-            print(f"Error parsing metadata file: {e}")
+            mylog.debug(f"Error parsing metadata file: {e}")
 
 
 def _guess_pcast(vals):
