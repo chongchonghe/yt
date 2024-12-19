@@ -908,7 +908,7 @@ class BoxlibDataset(Dataset):
         else:
             self.geometry = Geometry(geom_str)
 
-        if self.geometry == "cylindrical":
+        if self.geometry is Geometry.CYLINDRICAL:
             dre = self.domain_right_edge.copy()
             dre[2] = 2.0 * np.pi
             self.domain_right_edge = dre
