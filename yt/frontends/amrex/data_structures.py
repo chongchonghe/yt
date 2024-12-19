@@ -142,7 +142,7 @@ class BoxLibParticleHeader:
             try:
                 self.real_type = known_real_types[particle_real_type]
             except KeyError:
-                mylog.debug(
+                mylog.warning(
                     "yt did not recognize particle real type '%s'. Assuming 'double'.",
                     particle_real_type,
                 )
