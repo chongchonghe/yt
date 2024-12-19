@@ -1,4 +1,5 @@
 import yaml
+import json
 import glob
 import os
 import re
@@ -141,7 +142,7 @@ class BoxLibParticleHeader:
             try:
                 self.real_type = known_real_types[particle_real_type]
             except KeyError:
-                mylog.warning(
+                mylog.debug(
                     "yt did not recognize particle real type '%s'. Assuming 'double'.",
                     particle_real_type,
                 )
@@ -372,24 +373,23 @@ class BoxlibHierarchy(GridIndex):
                 dx[i].append(DRE[2] - DLE[2])
         self.level_dds = np.array(dx, dtype="float64")
         next(header_file)
-        match self.ds.geometry:
-            case Geometry.CARTESIAN:
-                default_ybounds = (0.0, 1.0)
-                default_zbounds = (0.0, 1.0)
-            case Geometry.CYLINDRICAL:
-                self.level_dds[:, 2] = 2 * np.pi
-                default_ybounds = (0.0, 1.0)
-                default_zbounds = (0.0, 2 * np.pi)
-            case Geometry.SPHERICAL:
-                # BoxLib only supports 1D spherical, so ensure
-                # the other dimensions have the right extent.
-                self.level_dds[:, 1] = np.pi
-                self.level_dds[:, 2] = 2 * np.pi
-                default_ybounds = (0.0, np.pi)
-                default_zbounds = (0.0, 2 * np.pi)
-            case _:
-                header_file.close()
-                raise RuntimeError("Unknown BoxLib coordinate system.")
+        if self.ds.geometry == "cartesian":
+            default_ybounds = (0.0, 1.0)
+            default_zbounds = (0.0, 1.0)
+        elif self.ds.geometry == "cylindrical":
+            self.level_dds[:, 2] = 2 * np.pi
+            default_ybounds = (0.0, 1.0)
+            default_zbounds = (0.0, 2 * np.pi)
+        elif self.ds.geometry == "spherical":
+            # BoxLib only supports 1D spherical, so ensure
+            # the other dimensions have the right extent.
+            self.level_dds[:, 1] = np.pi
+            self.level_dds[:, 2] = 2 * np.pi
+            default_ybounds = (0.0, np.pi)
+            default_zbounds = (0.0, 2 * np.pi)
+        else:
+            header_file.close()
+            raise RuntimeError("Unknown BoxLib coordinate system.")
         if int(next(header_file)) != 0:
             header_file.close()
             raise RuntimeError("INTERNAL ERROR! This should be a zero.")
@@ -907,7 +907,7 @@ class BoxlibDataset(Dataset):
         else:
             self.geometry = Geometry(geom_str)
 
-        if self.geometry is Geometry.CYLINDRICAL:
+        if self.geometry == "cylindrical":
             dre = self.domain_right_edge.copy()
             dre[2] = 2.0 * np.pi
             self.domain_right_edge = dre
@@ -1332,48 +1332,43 @@ class NyxDataset(BoxlibDataset):
 
 class QuokkaHierarchy(BoxlibHierarchy):
     def __init__(self, ds, dataset_type="quokka_native"):
-        super().__init__(ds, dataset_type)
+        super().__init__(ds, dataset_type)  # Call the parent initializer
 
-        # Dynamically detect particle types by searching for "*_particles" directories
-        particle_dirs = glob.glob(os.path.join(self.ds.output_dir, "*_particles"))
-        detected_particle_types = []
-
+        # Use glob to dynamically detect particle directories
+        particle_dirs = glob.glob(os.path.join(ds.output_dir, "*_particles"))
+        
         for pdir in particle_dirs:
             ptype = os.path.basename(pdir)
             header_file = os.path.join(pdir, "Header")
+
             if os.path.exists(header_file):
-                detected_particle_types.append(ptype)
+                # Read the Header to determine the number of fields
+                with open(header_file, 'r') as f:
+                    _ = f.readline().strip()  # Skip version info
+                    _ = f.readline().strip()  # Skip number of particles
+                    num_fields = int(f.readline().strip())  # Number of fields
 
-        if detected_particle_types:
-            quokka_extra_real_fields = [
-                "particle_velocity_x",
-                "particle_velocity_y",
-                "particle_velocity_z",
-            ]
+                    # Read the field names
+                    fields = [f.readline().strip() for _ in range(num_fields)]
 
-            is_checkpoint = True
+                # Define extra real fields specific to Quokka
+                quokka_extra_real_fields = [
+                    "particle_velocity_x",
+                    "particle_velocity_y",
+                    "particle_velocity_z",
+                ]
 
-            for ptype in detected_particle_types:
-                self._read_particles(
-                    ptype,  # Use the detected particle type
-                    is_checkpoint,
-                    quokka_extra_real_fields[0 : self.ds.dimensionality],
-                )
+                is_checkpoint = False
 
-            # Update the dataset's particle types
-            self.ds.parameters["particles"] = len(detected_particle_types)
-            self.ds.particle_types = tuple(detected_particle_types)
-            self.ds.particle_types_raw = self.ds.particle_types
-        else:
-            # No particle types detected
-            self.ds.parameters["particles"] = 0
-            self.ds.particle_types = ()
-            self.ds.particle_types_raw = ()
-            mylog.debug("No recognized particle types found in the dataset.")
+                # Pass the fields to _read_particles
+                extra_fields = quokka_extra_real_fields[:ds.dimensionality] + fields
+
+                # Read particle data for this type
+                self._read_particles(ptype, is_checkpoint, extra_fields)
 
 
 class QuokkaDataset(AMReXDataset):
-    # match any plotfiles that have a metadata.yaml file in the root
+    # Match any plotfiles that have a metadata.yaml file in the root
     _index_class = QuokkaHierarchy
     _field_info_class = QuokkaFieldInfo
     _subtype_keyword = ""
@@ -1390,7 +1385,6 @@ class QuokkaDataset(AMReXDataset):
         unit_system="cgs",
         default_species_fields=None,
     ):
-        # Initialize cparam_filename to the default if not provided
         if cparam_filename is None:
             cparam_filename = self._default_cparam_filename
 
@@ -1409,7 +1403,7 @@ class QuokkaDataset(AMReXDataset):
         self._parse_metadata_file()
 
         # Add radiation fields in fluid_types only if detected
-        if self.parameters['radiation_field_groups'] > 0: 
+        if self.parameters.get('radiation_field_groups', 0) > 0:
             self.fluid_types += ("rad",)
 
     def _parse_parameter_file(self):
@@ -1565,6 +1559,85 @@ class QuokkaDataset(AMReXDataset):
             # Update parameters for refinement
             self.parameters["max_refinement_level"] = max_refinement_level
             self.parameters["refinement"] = max_refinement_level > 0
+
+        # Handle particle information from "*_particles/Header"
+        particle_dirs = glob.glob(os.path.join(self.output_dir, "*_particles"))
+        detected_particle_types = []
+        particle_info = {}
+
+        for pdir in particle_dirs:
+            particle_type = os.path.basename(pdir)
+            header_file = os.path.join(pdir, "Header")
+            fields_json_file = os.path.join(pdir, "Fields.json")
+
+            if os.path.exists(header_file):
+                detected_particle_types.append(particle_type)
+
+                # Parse the Header
+                with open(header_file, 'r') as f:
+                    f.readline().strip()  # Skip version line
+                    num_particles = int(f.readline().strip())  # Second line
+                    num_fields = int(f.readline().strip())  # Third line
+                    fields = [f.readline().strip() for _ in range(num_fields)]  # Remaining lines
+
+                # Default field names and units
+                field_names = fields[:]
+                field_units = {field: "dimensionless" for field in fields}
+
+                # Check and parse Fields.json
+                if os.path.exists(fields_json_file):
+                    try:
+                        with open(fields_json_file, 'r') as f:
+                            field_data = json.load(f)
+                            json_field_names = list(field_data.get("fields", []))
+                            raw_units = field_data.get("units", {})
+
+                            # Validate field names count
+                            if len(json_field_names) == len(fields):
+                                field_names = json_field_names
+                            else:
+                                mylog.debug(
+                                    "Field names in Fields.json do not match the number of fields in Header for '%s'. "
+                                    "Using names from Header.",
+                                    particle_type,
+                                )
+
+                            # Translate raw unit dimensions into readable strings
+                            base_units = ["M", "L", "T", "Θ"]  # Mass, Length, Time, Temperature, currently 4 base units
+                            for field, unit_dims in raw_units.items():
+                                field_units[field] = " ".join(
+                                    f"{base_units[i]}^{exp}" if exp != 0 else ""
+                                    for i, exp in enumerate(unit_dims)
+                                ).strip() or "dimensionless"
+                    except Exception as e:
+                        mylog.debug(
+                            "Failed to parse Fields.json for particle type '%s': %s",
+                            particle_type,
+                            e,
+                        )
+
+                # Ensure all fields have units (handle missing units gracefully)
+                for field in fields:
+                    if field not in field_units:
+                        field_units[field] = "dimensionless"
+
+                # Add particle info
+                particle_info[particle_type] = {
+                    "num_particles": num_particles,
+                    "num_fields": num_fields,
+                    "fields": field_names,
+                    "units": field_units,
+                }
+
+        # Update parameters with particle info
+        self.parameters.update({
+            "particles": len(detected_particle_types),
+            "particle_types": tuple(detected_particle_types),
+            "particle_info": particle_info,
+        })
+
+        # Debugging: Log parameters for verification
+        mylog.debug("Updated ds.parameters with particle info: %s", self.parameters)
 
         # Set hydro method explicitly
         self.parameters["HydroMethod"] = "Quokka"
