@@ -1333,7 +1333,7 @@ class NyxDataset(BoxlibDataset):
 
 class QuokkaHierarchy(BoxlibHierarchy):
     def __init__(self, ds, dataset_type="quokka_native"):
-        super().__init__(ds, dataset_type)  
+        super().__init__(ds, dataset_type)
 
         # Dynamically detect particle types by searching for "*_particles" directories
         particle_dirs = glob.glob(os.path.join(self.ds.output_dir, "*_particles"))
