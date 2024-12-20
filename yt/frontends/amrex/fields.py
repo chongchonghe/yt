@@ -612,7 +612,7 @@ class QuokkaFieldInfo(FieldInfoContainer):
                         display_name=f"Radiation Flux Density {axis.upper()} Group {group}",
                     )
         
-        # Dynamically set up custom particle fields (convert `real_comp`` to physics) for all particle types
+        # Dynamically set up custom particle fields (convert `real_comp` to physics) for all particle types
         for ptype in self.ds.particle_types:
             self.setup_custom_particle_fields(ptype)
 
