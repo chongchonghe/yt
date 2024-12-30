@@ -653,7 +653,7 @@ class QuokkaFieldInfo(FieldInfoContainer):
                 base, exponent = term.split("^")
                 dimensions[base] = int(exponent)
 
-            # Construct the conversion factor using the unit system, Use code_mass, code_length, code_time format for units
+            # Construct the conversion factor using the unit system. Use code_mass, code_length, code_time format for units
             conversion_factor = (
                 f"code_mass**{dimensions['M']} * "
                 f"code_length**{dimensions['L']} * "

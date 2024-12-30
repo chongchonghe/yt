@@ -1418,7 +1418,7 @@ class QuokkaDataset(AMReXDataset):
 
         with open(header_filename, 'r') as f:
             # Parse header version
-            self.parameters['header_version'] = f.readline().strip()
+            self.parameters['plot_file_type'] = f.readline().strip()
 
             # Number of fields
             num_fields = int(f.readline().strip())
