@@ -1585,6 +1585,9 @@ class QuokkaDataset(AMReXDataset):
                 field_names = fields[:]
                 field_units = {field: "dimensionless" for field in fields}
 
+                # Initialize variables
+                json_field_names = None
+
                 # Check and parse Fields.json
                 if os.path.exists(fields_json_file):
                     try:
@@ -1595,32 +1598,46 @@ class QuokkaDataset(AMReXDataset):
 
                             # Validate field names count
                             if len(json_field_names) == len(fields):
+                                # Replace the default fields (real_comp*) with those from Fields.json
                                 field_names = json_field_names
+                                field_units = {}
+
+                                # Translate raw unit dimensions into readable strings
+                                base_units = ["M", "L", "T", "Θ"]  # Mass, Length, Time, Temperature
+                                for field, unit_dims in raw_units.items():
+                                    field_units[field] = " ".join(
+                                        f"{base_units[i]}^{exp}" if exp != 0 else ""
+                                        for i, exp in enumerate(unit_dims)
+                                    ).strip() or "dimensionless"
+
+                                # Remove any `real_comp*` entries from the field_units
+                                for idx in range(len(fields)):
+                                    real_comp_field = f"real_comp{idx}"
+                                    if real_comp_field in field_units:
+                                        del field_units[real_comp_field]
+
                             else:
                                 mylog.debug(
                                     "Field names in Fields.json do not match the number of fields in Header for '%s'. "
                                     "Using names from Header.",
                                     particle_type,
                                 )
-
-                            # Translate raw unit dimensions into readable strings
-                            base_units = ["M", "L", "T", "Θ"]  # Mass, Length, Time, Temperature, currently 4 base units
-                            for field, unit_dims in raw_units.items():
-                                field_units[field] = " ".join(
-                                    f"{base_units[i]}^{exp}" if exp != 0 else ""
-                                    for i, exp in enumerate(unit_dims)
-                                ).strip() or "dimensionless"
                     except Exception as e:
                         mylog.debug(
                             "Failed to parse Fields.json for particle type '%s': %s",
                             particle_type,
                             e,
                         )
+                else:
+                    # Ensure all fields have units (handle missing units gracefully)
+                    field_units = {field: "dimensionless" for field in fields}
 
-                # Ensure all fields have units (handle missing units gracefully)
-                for field in fields:
-                    if field not in field_units:
-                        field_units[field] = "dimensionless"
+                # Explicitly remove real_comp* entries if Fields.json replaces the fields
+                if field_names == json_field_names:
+                    for idx in range(len(fields)):
+                        real_comp_field = f"real_comp{idx}"
+                        if real_comp_field in field_units:
+                            del field_units[real_comp_field]
 
                 # Add particle info
                 particle_info[particle_type] = {
