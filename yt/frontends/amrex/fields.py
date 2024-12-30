@@ -653,14 +653,15 @@ class QuokkaFieldInfo(FieldInfoContainer):
                 base, exponent = term.split("^")
                 dimensions[base] = int(exponent)
 
-            # Construct the conversion factor using the unit system
-            unit_system = self.ds.unit_system
+            # Construct the conversion factor using the unit system, Use code_mass, code_length, code_time format for units
             conversion_factor = (
-                unit_system["mass"]**dimensions["M"]
-                * unit_system["length"]**dimensions["L"]
-                * unit_system["time"]**dimensions["T"]
-                * unit_system["temperature"]**dimensions["Θ"]
+                f"code_mass**{dimensions['M']} * "
+                f"code_length**{dimensions['L']} * "
+                f"code_time**{dimensions['T']} * "
+                f"code_temperature**{dimensions['Θ']}"
             )
+            # Convert the string expression to actual unit quantity
+            conversion_factor = self.ds.quan(1.0, conversion_factor)
             return conversion_factor
 
         for idx, field_name in enumerate(field_map):
