@@ -511,6 +511,9 @@ class QuokkaFieldInfo(FieldInfoContainer):
         ("x-GasMomentum", ("code_mass / (code_length**2 * code_time)", ["momentum_density_x"], r"\rho u")),
         ("y-GasMomentum", ("code_mass / (code_length**2 * code_time)", ["momentum_density_y"], r"\rho v")),
         ("z-GasMomentum", ("code_mass / (code_length**2 * code_time)", ["momentum_density_z"], r"\rho w")),
+        # Temperature field is not present in early Quokka datasets
+        ("gasTemperature", ("K", ["temperature"], r"T")), 
+        # Scalar fields are not always present
         ("scalar_0", ("", ["scalar_0"], "Scalar 0")),
         ("scalar_1", ("", ["scalar_1"], "Scalar 1")),
         ("scalar_2", ("", ["scalar_2"], "Scalar 2")),
