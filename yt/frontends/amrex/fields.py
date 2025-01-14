@@ -571,22 +571,30 @@ class QuokkaFieldInfo(FieldInfoContainer):
                     display_name=f"v_{axis} (face-centered)",
                 )
 
-        # Add magnetic fields dynamically for each axis (Placeholder for now)
+        # Call the Bfields and radiation fields setup
+        self.setup_Bfields() # magnetic fields are still placeholder here
+        self.setup_radiation_fields()
+
+    def setup_Bfields(self):
+        """
+        Dynamically add magnetic fields based on presence of Bfield fields in ds.parameters['fields']
+        """
+        # Check if any field name contains 'Bfield'
+        if not any('Bfield' in field for field in self.ds.parameters.get('fields', [])):
+            return
+
         for axis in "xyz":
             bfield_name = f"BField_{axis}"
             boxlib_bfield = f"{axis}-BField"
 
             if ("boxlib", boxlib_bfield) in self.field_list:
                 self.add_field(
-                    ("gas", bfield_name),
+                    ("mag", f"{axis}-field"),
                     sampling_type="cell",
-                    function=lambda field, data, axis=axis: data["boxlib", boxlib_bfield],
-                    units="",  # Leave units empty for now
+                    function=lambda field, data, axis=axis: data["boxlib", f"{axis}-BField"] * self.ds.unit_system["magnetic_field_strength"],
+                    units=self.ds.unit_system["magnetic_field_strength"],
                     display_name=f"B_{axis} (magnetic field)",
                 )
-
-        # Call the new radiation fields setup
-        self.setup_radiation_fields()
 
     def setup_radiation_fields(self):
         # Dynamically add radiation fields
