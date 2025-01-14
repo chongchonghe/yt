@@ -1420,78 +1420,25 @@ class QuokkaDataset(AMReXDataset):
             # Parse header version
             self.parameters['plot_file_type'] = f.readline().strip()
 
+            # expecting mandatory fields: gasDensity, x-GasMomentum, y-GasMomentum, z-GasMomentum, gasEnergy, gasInternalEnergy
             # Number of fields
             num_fields = int(f.readline().strip())
             self.parameters['fields'] = []
 
-            # Parse fixed gas fields (6 mandatory fields)
-            gas_fields = [
-                "gasDensity",
-                "x-GasMomentum",
-                "y-GasMomentum",
-                "z-GasMomentum",
-                "gasEnergy",
-                "gasInternalEnergy",
-            ]
-            for field in gas_fields:
-                self.parameters['fields'].append(f.readline().strip())
-
             # Metadata flags
-            temperature_present = False
-            velocity_present = False
             bfield_present = False
-            scalar_count = 0
             rad_group_count = 0
 
-            # Check for optional temperature field
-            next_field = f.readline().strip()
-            if next_field == "gasTemperature":
-                self.parameters['fields'].append(next_field)
-                temperature_present = True
-            else:
-                # Rewind the file pointer if temperature is absent
-                f.seek(f.tell() - len(next_field) - 1)
-
-            # Dynamically parse all remaining fields
-            remaining_fields = num_fields - len(self.parameters['fields'])
-
-            while remaining_fields > 0:
+            for i in range(num_fields):
                 current_field = f.readline().strip()
-                remaining_fields -= 1
-
-                if current_field.startswith("scalar_"):
-                    self.parameters['fields'].append(current_field)
-                    scalar_count += 1
-                elif current_field.startswith("radEnergy-Group"):
-                    # Parse radEnergy and corresponding flux fields for a group
-                    self.parameters['fields'].append(current_field)  # radEnergy
-                    self.parameters['fields'].append(f.readline().strip())  # x-RadFlux
-                    self.parameters['fields'].append(f.readline().strip())  # y-RadFlux
-                    self.parameters['fields'].append(f.readline().strip())  # z-RadFlux
-                    remaining_fields -= 3  # Account for the flux fields
+                if current_field.startswith("radEnergy-Group"):
                     rad_group_count += 1
-                elif current_field == "x-velocity":
-                    # Parse velocity fields (x, y, z)
-                    self.parameters['fields'].append(current_field)
-                    self.parameters['fields'].append(f.readline().strip())
-                    self.parameters['fields'].append(f.readline().strip())
-                    remaining_fields -= 2
-                    velocity_present = True
                 elif current_field == "x-BField":
-                    # Parse BField fields (x, y, z)
-                    self.parameters['fields'].append(current_field)
-                    self.parameters['fields'].append(f.readline().strip())
-                    self.parameters['fields'].append(f.readline().strip())
-                    remaining_fields -= 2
                     bfield_present = True
-                else:
-                    raise ValueError(f"Unexpected field: {current_field}")
+                self.parameters['fields'].append(current_field)
 
             # Add metadata for radiation groups, scalars, and field existence flags
             self.parameters['radiation_field_groups'] = rad_group_count
-            self.parameters['scalar_field_count'] = scalar_count
-            self.parameters['temperature_field'] = temperature_present
-            self.parameters['velocity_fields'] = velocity_present
             self.parameters['Bfields'] = bfield_present
 
             # Parse remaining metadata
