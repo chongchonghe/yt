@@ -1405,6 +1405,9 @@ class QuokkaDataset(AMReXDataset):
         # Add radiation fields in fluid_types only if detected
         if self.parameters.get('radiation_field_groups', 0) > 0:
             self.fluid_types += ("rad",)
+        # Add magnetic fields in fluid_types only if detected
+        if "Bfield" in self.parameters['fields']:
+            self.fluid_types += ("mag",)
 
     def _parse_parameter_file(self):
         # Call parent method to initialize core setup by yt
