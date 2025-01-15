@@ -1428,7 +1428,6 @@ class QuokkaDataset(AMReXDataset):
             self.parameters['fields'] = []
 
             # Metadata flags
-            bfield_present = False
             rad_group_count = 0
 
             for i in range(num_fields):
