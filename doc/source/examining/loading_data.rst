@@ -2170,7 +2170,7 @@ Boxlib Fields and Units
 The QUOKKA frontend is built upon the AMReX framework, which follows the BoxLib
 data format. When a QUOKKA dataset is loaded, yt automatically:
 
-- Detects and loads all available fields in the dataset
+- Detects and loads all available fields in the dataset from the ``Header`` file
 - Maps the native field names to (field_type, field_name) tuples
 - Assigns physical units based on metadata information
 
