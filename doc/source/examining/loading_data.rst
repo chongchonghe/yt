@@ -2212,8 +2212,8 @@ fields with appropriate physical units. The frontend handles:
 - Creating convenient derived fields for analysis and visualization
 
 You can view all available derived fields with ``print(ds.derived_field_list)``.
-For example, the native ('boxlib', 'gasDensity') field is mapped to ('gas',
-'density') with proper units:
+For example, the native ``('boxlib', 'gasDensity')`` field is mapped to ``('gas',
+'density')`` with proper units:
 
 .. code-block:: python
 
