@@ -1,0 +1,68 @@
+HyperCLaw-V1.1
+36
+density
+xmom
+ymom
+zmom
+rho_E
+rho_e
+Temp
+rho_X
+pressure
+kineng
+soundspeed
+Gamma_1
+MachNumber
+uplusc
+uminusc
+entropy
+magvort
+divu
+eint_E
+eint_e
+logden
+StateErr_0
+StateErr_1
+StateErr_2
+X(X)
+abar
+x_velocity
+y_velocity
+z_velocity
+magvel
+radvel
+circvel
+magmom
+angular_momentum_x
+angular_momentum_y
+angular_momentum_z
+1
+0.1
+3
+0 
+1 
+2 2 2 
+((0) (31) (0)) ((0) (63) (0)) ((0) (127) (0)) ((0) (255) (0)) 
+150 300 600 1200 
+0.03125 
+0.015625 
+0.0078125 
+0.00390625 
+1
+0
+0 1 0.1
+150
+0 1
+Level_0/Cell
+1 1 0.1
+300
+0 0.5
+Level_1/Cell
+2 1 0.1
+600
+0.0625 0.4375
+Level_2/Cell
+3 1 0.1
+1200
+0.09375 0.40625
+Level_3/Cell
