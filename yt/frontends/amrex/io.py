@@ -130,73 +130,78 @@ class IOHandlerBoxlib(BaseIOHandler):
         for chunk in chunks:  # These should be organized by grid filename
             for g in chunk.objs:
                 for ptype, field_list in sorted(ptf.items()):
-                    npart = g._pdata[ptype]["NumberOfParticles"]
-                    if npart == 0:
-                        continue
-
-                    fn = g._pdata[ptype]["particle_filename"]
-                    offset = g._pdata[ptype]["offset"]
                     pheader = self.ds.index.particle_headers[ptype]
+                    # _pdata[ptype] is a list of entries, one per AMReX grid box.
+                    # Multiple entries can map to the same yt grid (e.g. projection
+                    # plotfiles where field data is on one merged grid but particles
+                    # retain the original domain decomposition).
+                    for pentry in g._pdata.get(ptype, []):
+                        npart = pentry["NumberOfParticles"]
+                        if npart == 0:
+                            continue
 
-                    with open(fn, "rb") as f:
-                        # read in the position fields for selection
-                        f.seek(offset + pheader.particle_int_dtype.itemsize * npart)
-                        rdata = np.fromfile(
-                            f, pheader.real_type, pheader.num_real * npart
-                        )
+                        fn = pentry["particle_filename"]
+                        offset = pentry["offset"]
 
-                        # Allow reading particles in 1, 2, and 3 dimensions,
-                        # setting the appropriate default for unused dimensions.
-                        pos = []
-                        for idim in [1, 2, 3]:
-                            if g.ds.dimensionality >= idim:
-                                pos.append(
-                                    np.asarray(
-                                        rdata[idim - 1 :: pheader.num_real],
-                                        dtype=np.float64,
+                        with open(fn, "rb") as f:
+                            # read in the position fields for selection
+                            f.seek(offset + pheader.particle_int_dtype.itemsize * npart)
+                            rdata = np.fromfile(
+                                f, pheader.real_type, pheader.num_real * npart
+                            )
+
+                            # Allow reading particles in 1, 2, and 3 dimensions,
+                            # setting the appropriate default for unused dimensions.
+                            pos = []
+                            for idim in [1, 2, 3]:
+                                if g.ds.dimensionality >= idim:
+                                    pos.append(
+                                        np.asarray(
+                                            rdata[idim - 1 :: pheader.num_real],
+                                            dtype=np.float64,
+                                        )
                                     )
-                                )
-                            else:
-                                center = 0.5 * (
-                                    g.LeftEdge[idim - 1] + g.RightEdge[idim - 1]
-                                )
-                                pos.append(np.full(npart, center, dtype=np.float64))
-                        x, y, z = pos
+                                else:
+                                    center = 0.5 * (
+                                        g.LeftEdge[idim - 1] + g.RightEdge[idim - 1]
+                                    )
+                                    pos.append(np.full(npart, center, dtype=np.float64))
+                            x, y, z = pos
 
-                        if selector is None:
-                            # This only ever happens if the call is made from
-                            # _read_particle_coords.
-                            yield ptype, (x, y, z)
-                            continue
-                        mask = selector.select_points(x, y, z, 0.0)
-                        if mask is None:
-                            continue
-                        for field in field_list:
-                            # handle the case that this is an integer field
-                            int_fnames = [
-                                fname for _, fname in pheader.known_int_fields
-                            ]
-                            if field in int_fnames:
-                                ind = int_fnames.index(field)
-                                f.seek(offset)
-                                idata = np.fromfile(
-                                    f, pheader.int_type, pheader.num_int * npart
-                                )
-                                data = np.asarray(
-                                    idata[ind :: pheader.num_int], dtype=np.float64
-                                )
-                                yield (ptype, field), data[mask].flatten()
+                            if selector is None:
+                                # This only ever happens if the call is made from
+                                # _read_particle_coords.
+                                yield ptype, (x, y, z)
+                                continue
+                            mask = selector.select_points(x, y, z, 0.0)
+                            if mask is None:
+                                continue
+                            for field in field_list:
+                                # handle the case that this is an integer field
+                                int_fnames = [
+                                    fname for _, fname in pheader.known_int_fields
+                                ]
+                                if field in int_fnames:
+                                    ind = int_fnames.index(field)
+                                    f.seek(offset)
+                                    idata = np.fromfile(
+                                        f, pheader.int_type, pheader.num_int * npart
+                                    )
+                                    data = np.asarray(
+                                        idata[ind :: pheader.num_int], dtype=np.float64
+                                    )
+                                    yield (ptype, field), data[mask].flatten()
 
-                            # handle case that this is a real field
-                            real_fnames = [
-                                fname for _, fname in pheader.known_real_fields
-                            ]
-                            if field in real_fnames:
-                                ind = real_fnames.index(field)
-                                data = np.asarray(
-                                    rdata[ind :: pheader.num_real], dtype=np.float64
-                                )
-                                yield (ptype, field), data[mask].flatten()
+                                # handle case that this is a real field
+                                real_fnames = [
+                                    fname for _, fname in pheader.known_real_fields
+                                ]
+                                if field in real_fnames:
+                                    ind = real_fnames.index(field)
+                                    data = np.asarray(
+                                        rdata[ind :: pheader.num_real], dtype=np.float64
+                                    )
+                                    yield (ptype, field), data[mask].flatten()
 
 
 class IOHandlerOrion(IOHandlerBoxlib):

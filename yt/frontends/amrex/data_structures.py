@@ -601,16 +601,22 @@ class BoxlibHierarchy(GridIndex):
         gid = 0
         for lev, data in self.particle_headers[directory_name].data_map.items():
             for pdf in data.values():
-                pdict = self.grids[gid]._pdata
-                pdict[directory_name] = {}
-                pdict[directory_name]["particle_filename"] = base_particle_fn % (
-                    lev,
-                    pdf.file_number,
+                # Clamp gid to the last available grid. This handles projection
+                # plotfiles where particle data retains the original AMReX grid
+                # decomposition but field data is stored on fewer merged grids.
+                effective_gid = min(gid, len(self.grids) - 1)
+                pdict = self.grids[effective_gid]._pdata
+                if directory_name not in pdict:
+                    pdict[directory_name] = []
+                pdict[directory_name].append(
+                    {
+                        "particle_filename": base_particle_fn % (lev, pdf.file_number),
+                        "offset": pdf.offset,
+                        "NumberOfParticles": pdf.num_particles,
+                    }
                 )
-                pdict[directory_name]["offset"] = pdf.offset
-                pdict[directory_name]["NumberOfParticles"] = pdf.num_particles
-                self.grid_particle_count[gid] += pdf.num_particles
-                self.grids[gid].NumberOfParticles += pdf.num_particles
+                self.grid_particle_count[effective_gid] += pdf.num_particles
+                self.grids[effective_gid].NumberOfParticles += pdf.num_particles
                 gid += 1
 
         # add particle fields to field_list
