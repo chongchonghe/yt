@@ -601,6 +601,8 @@ class BoxlibHierarchy(GridIndex):
         gid = 0
         for lev, data in self.particle_headers[directory_name].data_map.items():
             for pdf in data.values():
+                if gid >= len(self.grids):
+                    break
                 pdict = self.grids[gid]._pdata
                 pdict[directory_name] = {}
                 pdict[directory_name]["particle_filename"] = base_particle_fn % (
