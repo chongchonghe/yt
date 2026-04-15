@@ -972,16 +972,27 @@ class Communicator:
                 )
                 for deeper_key in first_value.keys()
             }
+
+        # Get units (if any) from first value; we assume all values have the same
+        units = getattr(first_value, "units", None)
+        if self._distributed:
+            units = self.comm.bcast(units, root=0)
+
+        if units is not None:
+            inputs = (d.to(units).value for d in data.values())
         else:
-            # Otherwise, we assume our values can be concatenated
-            reduced_values = reduction_op([reduction_op(d) for d in data.values()])
+            inputs = data.values()
 
-            if self._distributed:
-                reduced_values = self.comm.allreduce(
-                    reduced_values, op=mpi_reduction_op
-                )
+        # Otherwise, we assume our values can be concatenated
+        reduced_values = reduction_op([reduction_op(d) for d in inputs])
 
-            return reduced_values
+        if units is not None:
+            reduced_values = reduced_values * units
+
+        if self._distributed:
+            reduced_values = self.comm.allreduce(reduced_values, op=mpi_reduction_op)
+
+        return reduced_values
 
     def all_concat(self, data: dict[Any, npt.NDArray | dict[str, npt.NDArray]]):
         """
