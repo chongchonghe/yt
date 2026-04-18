@@ -1010,8 +1010,7 @@ class Communicator:
             )
 
             if self._distributed:
-                # NOTE: mypy thinks this statement is unreachable (it is not)
-                all_values = np.concatenate(self.comm.allgather(all_values))  # type: ignore[unreachable]
+                all_values = np.concatenate(self.comm.allgather(all_values))
 
             return all_values
 
@@ -1046,8 +1045,7 @@ class Communicator:
             )
 
             if self._distributed:
-                # NOTE: mypy thinks this statement is unreachable (it is not)
-                tmp = self.comm.gather(all_values, root=root)  # type: ignore[unreachable]
+                tmp = self.comm.gather(all_values, root=root)
                 if self.comm.rank == root:
                     return np.concatenate(tmp)
                 else:
