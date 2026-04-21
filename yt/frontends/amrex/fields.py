@@ -618,8 +618,7 @@ class QuokkaFieldInfo(FieldInfoContainer):
         """
         Dynamically add magnetic fields based on presence of Bfield fields in ds.parameters['fields']
         """
-        # Check if any field name contains 'Bfield'
-        if not any("Bfield" in field for field in self.ds.parameters.get("fields", [])):
+        if not any("BField" in field for field in self.ds.parameters.get("fields", [])):
             return
 
         for axis in "xyz":

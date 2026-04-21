@@ -1411,7 +1411,7 @@ class QuokkaDataset(AMReXDataset):
         if self.parameters.get("radiation_field_groups", 0) > 0:
             self.fluid_types += ("rad",)
         # Add magnetic fields in fluid_types only if detected
-        if "Bfield" in self.parameters["fields"]:
+        if any("BField" in field for field in self.parameters["fields"]):
             self.fluid_types += ("mag",)
 
         # Check for face-centered variables directories
