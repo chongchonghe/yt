@@ -1668,7 +1668,6 @@ class QuokkaDataset(AMReXDataset):
         metadata_filename = os.path.join(self.output_dir, self.cparam_filename)
         if not os.path.exists(metadata_filename):
             mylog.error(f"Error: Metadata file '{metadata_filename}' not found.")
-            print(f"Error: Metadata file '{metadata_filename}' not found.")
             return
 
         with open(metadata_filename) as f:
