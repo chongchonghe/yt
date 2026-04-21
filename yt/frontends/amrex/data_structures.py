@@ -1410,9 +1410,6 @@ class QuokkaDataset(AMReXDataset):
         # Add radiation fields in fluid_types only if detected
         if self.parameters.get("radiation_field_groups", 0) > 0:
             self.fluid_types += ("rad",)
-        # Add magnetic fields in fluid_types only if detected
-        if any("BField" in field for field in self.parameters["fields"]):
-            self.fluid_types += ("mag",)
 
         # Check for face-centered variables directories
         self._load_face_centered_datasets()
@@ -1590,14 +1587,21 @@ class QuokkaDataset(AMReXDataset):
 
             detected_particle_types.append(particle_type)
 
-            # Parse the Header
+            # Parse the Header.
+            # Format (BoxLib): version, dim, num_real_extra, [real names], num_particles, ...
+            # Format (AMReX Version_Two): version, dim, num_real_extra, [real names],
+            #   num_int_extra, [int names], is_checkpoint, num_particles, ...
             with open(header_file) as f:
-                f.readline().strip()  # Skip version line
-                num_particles = int(f.readline().strip())  # Second line
-                num_fields = int(f.readline().strip())  # Third line
-                fields = [
-                    f.readline().strip() for _ in range(num_fields)
-                ]  # Remaining lines
+                version_string = f.readline().strip()
+                _dim = int(f.readline().strip())  # spatial dimensionality
+                num_fields = int(f.readline().strip())  # num_real_extra
+                fields = [f.readline().strip() for _ in range(num_fields)]
+                if version_string.startswith("Version_Two"):
+                    num_int_extra = int(f.readline().strip())
+                    for _ in range(num_int_extra):
+                        f.readline()  # skip int component names
+                    f.readline()  # skip is_checkpoint flag
+                num_particles = int(f.readline().strip())
 
             field_names = fields[:]
             field_units = dict.fromkeys(fields, "dimensionless")

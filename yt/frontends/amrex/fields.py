@@ -549,6 +549,11 @@ class QuokkaFieldInfo(FieldInfoContainer):
         ),
         # Temperature field is not present in early Quokka datasets
         ("gasTemperature", ("K", ["temperature"], r"T")),
+        # Magnetic field components (optional, only present in MHD runs).
+        # No aliases here; setup_magnetic_field_aliases creates ("gas", "magnetic_field_*").
+        ("x-BField", ("code_magnetic", [], None)),
+        ("y-BField", ("code_magnetic", [], None)),
+        ("z-BField", ("code_magnetic", [], None)),
     )
 
     known_particle_fields: KnownFieldsT = (
@@ -615,26 +620,13 @@ class QuokkaFieldInfo(FieldInfoContainer):
         self.setup_scalar_fields()
 
     def setup_Bfields(self):
-        """
-        Dynamically add magnetic fields based on presence of Bfield fields in ds.parameters['fields']
-        """
         if not any("BField" in field for field in self.ds.parameters.get("fields", [])):
             return
+        from yt.fields.magnetic_field import setup_magnetic_field_aliases
 
-        for axis in "xyz":
-            boxlib_bfield = f"{axis}-BField"
-
-            if ("boxlib", boxlib_bfield) in self.field_list:
-                self.add_field(
-                    ("mag", f"{axis}-field"),
-                    sampling_type="cell",
-                    function=lambda field, data, axis=axis: (
-                        data["boxlib", f"{axis}-BField"]
-                        * self.ds.unit_system["magnetic_field_strength"]
-                    ),
-                    units=self.ds.unit_system["magnetic_field_strength"],
-                    display_name=f"B_{axis} (magnetic field)",
-                )
+        setup_magnetic_field_aliases(
+            self, "boxlib", [f"{axis}-BField" for axis in "xyz"]
+        )
 
     def setup_radiation_fields(self):
         # Dynamically add radiation fields
