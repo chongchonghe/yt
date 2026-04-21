@@ -737,11 +737,25 @@ class QuokkaFieldInfo(FieldInfoContainer):
             return conversion_factor
 
         for idx, field_name in enumerate(field_map):
-            # Construct the `real_comp` field name
-            real_comp_field = f"particle_real_comp{idx}"
+            # Find the raw field name as it actually appears in field_list.
+            # Three naming conventions are possible depending on the file format:
+            #   1. AMReX header with generic names (real_comp0 → particle_real_comp0)
+            #   2. AMReX header with named components (luminosity → particle_luminosity)
+            #   3. BoxLib format with extra_field_names passed directly (luminosity)
+            raw_field = next(
+                (
+                    candidate
+                    for candidate in (
+                        f"particle_real_comp{idx}",
+                        f"particle_{field_name}",
+                        field_name,
+                    )
+                    if (ptype, candidate) in self.field_list
+                ),
+                None,
+            )
 
-            # Check if the `real_comp` field exists in the dataset
-            if (ptype, real_comp_field) in self.field_list:
+            if raw_field is not None:
                 # Retrieve the dimensional expression for the new field
                 dim_expr = unit_map.get(field_name, "dimensionless")
 
@@ -752,8 +766,8 @@ class QuokkaFieldInfo(FieldInfoContainer):
                 self.add_field(
                     (ptype, field_name),
                     sampling_type="particle",
-                    function=lambda field, data, real_comp_field=real_comp_field, conv=conversion_factor: (
-                        data[ptype, real_comp_field] * conv
+                    function=lambda field, data, raw_field=raw_field, conv=conversion_factor: (
+                        data[ptype, raw_field] * conv
                     ),
                     units=conversion_factor.units
                     if hasattr(conversion_factor, "units")
