@@ -763,8 +763,8 @@ class Dataset(abc.ABC):
         # turning off type-checker on a per-line basis
         cls: type[CoordinateHandler]
 
-        if isinstance(self.geometry, tuple):  # type: ignore [unreachable]
-            issue_deprecation_warning(  # type: ignore [unreachable]
+        if isinstance(self.geometry, tuple):
+            issue_deprecation_warning(
                 f"Dataset object {self} has a tuple for its geometry attribute. "
                 "This is interpreted as meaning the first element is the actual geometry string, "
                 "and the second represents an arbitrary axis order. "

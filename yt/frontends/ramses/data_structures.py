@@ -85,7 +85,7 @@ class RAMSESFileSanitizer:
         # This last case is (erroneously ?) marked as unreachable by mypy
         # If/when this bug is fixed upstream, mypy will warn that the unused
         # 'type: ignore' comment can be removed
-        if self.info_fname is None:  # type: ignore [unreachable]
+        if self.info_fname is None:
             raise ValueError(f"Failed to detect info file from '{filename!s}'")
 
     @property
@@ -679,6 +679,17 @@ class RAMSESIndex(OctreeIndex):
                 if len(domains) >= 1:
                     mylog.info("Identified %s intersecting domains", len(domains))
             base_region = getattr(dobj, "base_region", dobj)
+
+            # In case of MPI parallelism, we need to keep the intersection
+            # of all domains across all ranks
+            if self.comm.size > 1:
+                idomains = {dom.domain_id for dom in domains}
+                idomains = self.comm.comm.allreduce(
+                    set(idomains), op=lambda a, b: a & b
+                )
+
+                # Keep domains that every rank has
+                domains = [dom for dom in domains if dom.domain_id in idomains]
 
             subsets = [
                 RAMSESDomainSubset(
