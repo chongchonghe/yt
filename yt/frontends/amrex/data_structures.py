@@ -1640,7 +1640,7 @@ class QuokkaDataset(AMReXDataset):
             }
 
         # Update parameters with particle info
-        self.parameters["particles"] = (len(detected_particle_types),)
+        self.parameters["particles"] = len(detected_particle_types)
         self.parameters["particle_types"] = tuple(detected_particle_types)
         self.parameters["particle_info"] = particle_info
 
