@@ -1,5 +1,4 @@
 import glob
-import logging
 import os
 import re
 from collections import namedtuple
@@ -1450,23 +1449,11 @@ class QuokkaDataset(AMReXDataset):
             if not os.path.isdir(fc_dir):
                 mylog.debug(f"No face-centered {direction} dataset found at {fc_dir}")
                 continue
-            try:
-                # Load the face-centered dataset directly to avoid circular imports
-                mylog.info(f"Loading face-centered {direction} dataset from {fc_dir}")
-                fc_ds = QuokkaDataset(fc_dir)
-
-                # Store the dataset as an attribute
-                setattr(self, f"ds_fc_{direction}", fc_ds)
-
-                # Add a reference back to the parent dataset
-                fc_ds.parent_ds = self
-
-                # Add information about this being a face-centered dataset
-                fc_ds.fc_direction = direction
-            except Exception as e:
-                if mylog.isEnabledFor(logging.DEBUG):
-                    raise
-                mylog.warning(f"Failed to load face-centered {direction} dataset: {e}")
+            mylog.info(f"Loading face-centered {direction} dataset from {fc_dir}")
+            fc_ds = QuokkaDataset(fc_dir)
+            setattr(self, f"ds_fc_{direction}", fc_ds)
+            fc_ds.parent_ds = self
+            fc_ds.fc_direction = direction
 
     def _parse_parameter_file(self):
         # Call parent method to initialize core setup by yt
@@ -1667,29 +1654,17 @@ class QuokkaDataset(AMReXDataset):
         # Construct the full path to the metadata file
         metadata_filename = os.path.join(self.output_dir, self.cparam_filename)
         if not os.path.exists(metadata_filename):
-            mylog.error(f"Error: Metadata file '{metadata_filename}' not found.")
-            print(f"Error: Metadata file '{metadata_filename}' not found.")
-            return
+            raise FileNotFoundError(f"Metadata file '{metadata_filename}' not found.")
 
         with open(metadata_filename) as f:
-            try:
-                metadata = yaml.safe_load(f)
-            except yaml.YAMLError as e:
-                if mylog.isEnabledFor(logging.DEBUG):
-                    raise
-                mylog.debug(f"Error parsing metadata file: {e}")
-                return
+            metadata = yaml.safe_load(f)
 
         if not metadata:
-            mylog.debug("Warning: Metadata file is empty.")
+            mylog.debug("Metadata file is empty.")
             return
 
-        try:
-            # Get quokka version, default to 0.0 if not present
-            quokka_version = Version(str(metadata.get("quokka_version", "0.0")))
-        except ValueError as e:
-            mylog.debug(f"Error parsing version numbers: {e}")
-            return
+        # Get quokka version, default to 0.0 if not present
+        quokka_version = Version(str(metadata.get("quokka_version", "0.0")))
 
         if quokka_version < Version("25.03"):
             # For older versions
