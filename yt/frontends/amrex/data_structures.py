@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 import re
 from collections import namedtuple
@@ -8,7 +9,6 @@ from stat import ST_CTIME
 import numpy as np
 from packaging.version import Version
 
-from yt.config import ytcfg
 from yt.data_objects.index_subobjects.grid_patch import AMRGridPatch
 from yt.data_objects.static_output import Dataset
 from yt.fields.field_info_container import FieldInfoContainer
@@ -1464,7 +1464,7 @@ class QuokkaDataset(AMReXDataset):
                 # Add information about this being a face-centered dataset
                 fc_ds.fc_direction = direction
             except Exception as e:
-                if ytcfg.get("yt", "quokka_debug"):
+                if mylog.isEnabledFor(logging.DEBUG):
                     raise
                 mylog.warning(f"Failed to load face-centered {direction} dataset: {e}")
 
@@ -1675,7 +1675,7 @@ class QuokkaDataset(AMReXDataset):
             try:
                 metadata = yaml.safe_load(f)
             except yaml.YAMLError as e:
-                if ytcfg.get("yt", "quokka_debug"):
+                if mylog.isEnabledFor(logging.DEBUG):
                     raise
                 mylog.debug(f"Error parsing metadata file: {e}")
                 return
