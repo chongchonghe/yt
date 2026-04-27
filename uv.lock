@@ -5600,6 +5600,7 @@ full = [
     { name = "pyaml" },
     { name = "pykdtree" },
     { name = "pyx" },
+    { name = "pyyaml" },
     { name = "ratarmount", marker = "sys_platform != 'darwin' and sys_platform != 'win32'" },
     { name = "regions", version = "0.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "regions", version = "0.11", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -5659,6 +5660,9 @@ owls-subfind = [
 ]
 parthenon = [
     { name = "h5py" },
+]
+quokka = [
+    { name = "pyyaml" },
 ]
 ramses = [
     { name = "f90nml" },
@@ -5749,6 +5753,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0.1" },
     { name = "pytest-mpl", marker = "extra == 'test'", specifier = ">=0.16.1" },
     { name = "pyx", marker = "extra == 'full'", specifier = ">=0.15" },
+    { name = "pyyaml", marker = "extra == 'quokka'", specifier = ">=6.0.1" },
     { name = "ratarmount", marker = "sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'full'", specifier = "~=0.8.1" },
     { name = "regions", marker = "extra == 'fits'", specifier = ">=0.7" },
     { name = "requests", marker = "extra == 'http-stream'", specifier = ">=2.30.0" },
@@ -5765,6 +5770,7 @@ requires-dist = [
     { name = "yt", extras = ["adaptahop"], marker = "extra == 'full'" },
     { name = "yt", extras = ["ahf"], marker = "extra == 'full'" },
     { name = "yt", extras = ["amrex"], marker = "extra == 'full'" },
+    { name = "yt", extras = ["amrex"], marker = "extra == 'quokka'" },
     { name = "yt", extras = ["amrvac"], marker = "extra == 'full'" },
     { name = "yt", extras = ["arepo"], marker = "extra == 'full'" },
     { name = "yt", extras = ["art"], marker = "extra == 'full'" },
@@ -5821,6 +5827,7 @@ requires-dist = [
     { name = "yt", extras = ["owls"], marker = "extra == 'full'" },
     { name = "yt", extras = ["owls-subfind"], marker = "extra == 'full'" },
     { name = "yt", extras = ["parthenon"], marker = "extra == 'full'" },
+    { name = "yt", extras = ["quokka"], marker = "extra == 'full'" },
     { name = "yt", extras = ["ramses"], marker = "extra == 'full'" },
     { name = "yt", extras = ["rockstar"], marker = "extra == 'full'" },
     { name = "yt", extras = ["sdf"], marker = "extra == 'full'" },
@@ -5830,7 +5837,7 @@ requires-dist = [
     { name = "yt", extras = ["ytdata"], marker = "extra == 'full'" },
     { name = "yt-idefix", extras = ["hdf5"], marker = "extra == 'idefix'", specifier = ">=2.3.0" },
 ]
-provides-extras = ["hdf5", "netcdf4", "fortran", "adaptahop", "ahf", "amrex", "amrvac", "art", "arepo", "artio", "athena", "athena-pp", "boxlib", "cf-radial", "chimera", "chombo", "cholla", "eagle", "enzo-e", "enzo", "exodus-ii", "fits", "flash", "gadget", "gadget-fof", "gamer", "gdf", "gizmo", "halo-catalog", "http-stream", "idefix", "moab", "nc4-cm1", "open-pmd", "owls", "owls-subfind", "parthenon", "ramses", "rockstar", "sdf", "stream", "swift", "tipsy", "ytdata", "full", "test"]
+provides-extras = ["hdf5", "netcdf4", "fortran", "adaptahop", "ahf", "amrex", "amrvac", "art", "arepo", "artio", "athena", "athena-pp", "boxlib", "cf-radial", "chimera", "chombo", "cholla", "eagle", "enzo-e", "enzo", "exodus-ii", "fits", "flash", "gadget", "gadget-fof", "gamer", "gdf", "gizmo", "halo-catalog", "http-stream", "idefix", "moab", "nc4-cm1", "open-pmd", "owls", "owls-subfind", "parthenon", "quokka", "ramses", "rockstar", "sdf", "stream", "swift", "tipsy", "ytdata", "full", "test"]
 
 [package.metadata.requires-dev]
 docs = [
