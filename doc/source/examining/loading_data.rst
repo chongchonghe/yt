@@ -2293,11 +2293,14 @@ workflow.
 Debugging QUOKKA datasets
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+To enable verbose debug output when loading QUOKKA datasets, set the log level
+to ``"debug"`` before calling :func:`~yt.loaders.load`:
+
 .. code-block:: python
 
    import yt
 
-   yt.config.ytcfg.set("yt", "quokka_debug", True)  # must be before yt.load
+   yt.set_log_level("debug")
    ds = yt.load("/path/to/quokka/plt")
 
 Support for Legacy Datasets

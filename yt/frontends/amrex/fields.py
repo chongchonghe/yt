@@ -549,6 +549,11 @@ class QuokkaFieldInfo(FieldInfoContainer):
         ),
         # Temperature field is not present in early Quokka datasets
         ("gasTemperature", ("K", ["temperature"], r"T")),
+        # Magnetic field components (optional, only present in MHD runs).
+        # No aliases here; setup_magnetic_field_aliases creates ("gas", "magnetic_field_*").
+        ("x-BField", ("code_magnetic", [], None)),
+        ("y-BField", ("code_magnetic", [], None)),
+        ("z-BField", ("code_magnetic", [], None)),
     )
 
     known_particle_fields: KnownFieldsT = (
@@ -615,27 +620,13 @@ class QuokkaFieldInfo(FieldInfoContainer):
         self.setup_scalar_fields()
 
     def setup_Bfields(self):
-        """
-        Dynamically add magnetic fields based on presence of Bfield fields in ds.parameters['fields']
-        """
-        # Check if any field name contains 'Bfield'
-        if not any("Bfield" in field for field in self.ds.parameters.get("fields", [])):
+        if not any("BField" in field for field in self.ds.parameters.get("fields", [])):
             return
+        from yt.fields.magnetic_field import setup_magnetic_field_aliases
 
-        for axis in "xyz":
-            boxlib_bfield = f"{axis}-BField"
-
-            if ("boxlib", boxlib_bfield) in self.field_list:
-                self.add_field(
-                    ("mag", f"{axis}-field"),
-                    sampling_type="cell",
-                    function=lambda field, data, axis=axis: (
-                        data["boxlib", f"{axis}-BField"]
-                        * self.ds.unit_system["magnetic_field_strength"]
-                    ),
-                    units=self.ds.unit_system["magnetic_field_strength"],
-                    display_name=f"B_{axis} (magnetic field)",
-                )
+        setup_magnetic_field_aliases(
+            self, "boxlib", [f"{axis}-BField" for axis in "xyz"]
+        )
 
     def setup_radiation_fields(self):
         # Dynamically add radiation fields
@@ -647,7 +638,7 @@ class QuokkaFieldInfo(FieldInfoContainer):
                 self.add_field(
                     ("rad", f"energy_density_{group}"),
                     sampling_type="cell",
-                    function=lambda _, data, ef=energy_field: (
+                    function=lambda field, data, ef=energy_field: (
                         data["boxlib", ef]
                         * self.ds.unit_system["energy"]
                         / self.ds.unit_system["length"] ** 3
@@ -746,11 +737,25 @@ class QuokkaFieldInfo(FieldInfoContainer):
             return conversion_factor
 
         for idx, field_name in enumerate(field_map):
-            # Construct the `real_comp` field name
-            real_comp_field = f"particle_real_comp{idx}"
+            # Find the raw field name as it actually appears in field_list.
+            # Three naming conventions are possible depending on the file format:
+            #   1. AMReX header with generic names (real_comp0 → particle_real_comp0)
+            #   2. AMReX header with named components (luminosity → particle_luminosity)
+            #   3. BoxLib format with extra_field_names passed directly (luminosity)
+            raw_field = next(
+                (
+                    candidate
+                    for candidate in (
+                        f"particle_real_comp{idx}",
+                        f"particle_{field_name}",
+                        field_name,
+                    )
+                    if (ptype, candidate) in self.field_list
+                ),
+                None,
+            )
 
-            # Check if the `real_comp` field exists in the dataset
-            if (ptype, real_comp_field) in self.field_list:
+            if raw_field is not None:
                 # Retrieve the dimensional expression for the new field
                 dim_expr = unit_map.get(field_name, "dimensionless")
 
@@ -761,8 +766,8 @@ class QuokkaFieldInfo(FieldInfoContainer):
                 self.add_field(
                     (ptype, field_name),
                     sampling_type="particle",
-                    function=lambda field, data, real_comp_field=real_comp_field, conv=conversion_factor: (
-                        data[ptype, real_comp_field] * conv
+                    function=lambda field, data, raw_field=raw_field, conv=conversion_factor: (
+                        data[ptype, raw_field] * conv
                     ),
                     units=conversion_factor.units
                     if hasattr(conversion_factor, "units")

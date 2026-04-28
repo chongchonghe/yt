@@ -148,7 +148,6 @@ ytdata = ["yt[HDF5]"]
 full = [
     "cartopy>=0.22.0",
     "firefly>=3.2.0",
-    "glueviz>=0.13.3",
     "ipython>=7.23.1",
     "ipywidgets>=8.0.0",
     "miniballcpp>=0.2.1",
@@ -239,6 +238,9 @@ nosetest = [
     "nose~=1.3.7",
     "nose-exclude>=0.5.0",
     "nose-timer~=1.0.0",
+    # nose's plugin system silently requires pkg_resources,
+    # which was part of setuptools but removed in version 82.0.0
+    "setuptools>=77.0.1, <82.0.0",
 ]
 typecheck = [
     "mypy>=1.18.2",
@@ -293,6 +295,8 @@ exclude = [
 ]
 
 [tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
 select = [
     "E",
     "F",
@@ -300,11 +304,14 @@ select = [
     "C4",   # flake8-comprehensions
     "B",    # flake8-bugbear
     "G",    # flake8-logging-format
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "YTT",  # flake8-2020
     "UP",   # pyupgrade
     "I",    # isort
     "NPY",  # numpy specific rules
+
+    # preview rules
+    "RUF031", # incorrectly-parenthesized-tuple-in-subscript
 ]
 ignore = [
     "E501",  # line too long
@@ -317,23 +324,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-third-party = [
-  "IPython",
-  "nose",
-  "numpy",
-  "sympy",
-  "matplotlib",
-  "unyt",
-  "git",
-  "yaml",
-  "dateutil",
-  "requests",
-  "coverage",
-  "pytest",
-  "pyx",
-  "glue",
-]
-known-first-party = ["yt"]
 
 # The -s option prevents pytest from capturing output sent to stdout
 # -v runs pytest in verbose mode
@@ -493,7 +483,6 @@ show_error_codes = true
 ignore_missing_imports = true
 warn_unused_configs = true
 warn_unused_ignores = true
-warn_unreachable = true
 show_error_context = true
 exclude = "(test_*|lodgeit)"
 
@@ -549,7 +538,6 @@ no-build-package = [
 ]
 constraint-dependencies = [
     "imageio!=2.35.0", # see https://github.com/yt-project/yt/issues/4966
-    "glue-core!=1.2.4",  # see https://github.com/glue-viz/glue/issues/2263
     "sympy!=1.10,!=1.9", # see https://github.com/sympy/sympy/issues/22241
     "jinja2>=2.11.3",
 
